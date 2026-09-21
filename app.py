@@ -7,7 +7,7 @@ import google.generativeai as genai
 # CONFIGURACIÓN DE LA PÁGINA
 # ==========================================
 st.set_page_config(page_title="Evaluador de Proyectos - EEBE", layout="wide")
-st.title("Evaluador de Proyectos de Diseño (EEBE - UPC)")
+st.title("🎓 Evaluador de Proyectos de Diseño (EEBE - UPC)")
 st.markdown("Herramienta de autoevaluación para PDS, AMFE, Ishikawa y QFD.")
 
 # ==========================================
@@ -173,10 +173,8 @@ with tab_qfd:
     with st.expander("ℹ️ ¿Cómo funciona este cálculo? (Caja Blanca)"):
         st.write("""
         **Lo que hace el algoritmo matemáticamente:**
-        Aplica un modelo de **Suma Producto**. 
-        Por cada columna de requisitos (CÓMO), el sistema toma el valor de relación que has introducido (0, 1, 3 o 9) y lo multiplica por la "Importancia" del QUÉ correspondiente de esa fila.
-        Luego, suma todos esos resultados parciales de la columna para darte la **Importancia Técnica Absoluta**. 
-        No importa si evalúas la importancia inicial del 1 al 5, del 1 al 10 o usas valores absolutos mayores; el cálculo priorizará correctamente las columnas más relevantes.
+        1. **Suma Producto:** Por cada columna técnica (CÓMO), toma el valor de relación (0, 1, 3 o 9) y lo multiplica por la "Importancia" del QUÉ de esa fila. Luego suma toda la columna para obtener la **Puntuación Absoluta**.
+        2. **Proporción:** El valor absoluto por sí solo no tiene un límite máximo (depende de cuántas filas añadas). Lo que importa es la prioridad. Por eso, el sistema suma todas las puntuaciones absolutas de todas las características técnicas para calcular qué **Porcentaje de Importancia Relativa (%)** representa cada una sobre el esfuerzo total del diseño.
         """)
 
     st.write("Construye tu matriz gestionando tus propias columnas (CÓMOs) y filas (QUÉs).")
@@ -260,8 +258,9 @@ with tab_qfd:
             importancias = df_qfd_edit["Importancia"].fillna(0).astype(float)
             comos_cols = [col for col in df_qfd_edit.columns if col.startswith("CÓMO:")]
             
-            resultados = {}
+            resultados_absolutos = {}
             alertas = False
+            
             for col in comos_cols:
                 valores_relacion = df_qfd_edit[col].fillna(0).astype(float)
                 if not all(valores_relacion.isin([0, 1, 3, 9])):
@@ -269,16 +268,27 @@ with tab_qfd:
                     st.warning(f"⚠️ Atención: En la columna '{col}' se detectaron valores distintos a 0, 1, 3 o 9. La metodología exige usar esta escala específica.")
                 
                 importancia_tecnica = (importancias * valores_relacion).sum()
-                resultados[col] = importancia_tecnica
+                resultados_absolutos[col] = importancia_tecnica
             
-            df_resultados = pd.DataFrame([resultados], index=["Importancia Técnica Absoluta"]).T
-            df_resultados = df_resultados.sort_values(by="Importancia Técnica Absoluta", ascending=False)
+            # Crear DataFrame de resultados
+            df_resultados = pd.DataFrame([resultados_absolutos], index=["Puntuación Absoluta"]).T
+            
+            # Calcular Porcentaje Relativo
+            total_absoluto = df_resultados["Puntuación Absoluta"].sum()
+            if total_absoluto > 0:
+                df_resultados["% Importancia Relativa"] = (df_resultados["Puntuación Absoluta"] / total_absoluto) * 100
+                df_resultados["% Importancia Relativa"] = df_resultados["% Importancia Relativa"].round(1).astype(str) + " %"
+            else:
+                df_resultados["% Importancia Relativa"] = "0.0 %"
+            
+            # Ordenar de mayor a menor importancia
+            df_resultados = df_resultados.sort_values(by="Puntuación Absoluta", ascending=False)
             
             if not alertas:
                 st.success("✅ Multiplicaciones verificadas con éxito. Escala 9-3-1-0 respetada.")
             
-            st.write("**Ranking Técnico (Características más importantes para el usuario):**")
-            st.dataframe(df_resultados.T, use_container_width=True)
+            st.write("**Ranking Técnico (Priorización de características para el diseño):**")
+            st.dataframe(df_resultados, use_container_width=True)
             
         except Exception as e:
             st.error(f"Error en el cálculo. Revisa que no hayas introducido texto en columnas numéricas. Detalle: {e}")
