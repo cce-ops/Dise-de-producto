@@ -7,7 +7,7 @@ import google.generativeai as genai
 # CONFIGURACIÓN DE LA PÁGINA
 # ==========================================
 st.set_page_config(page_title="Evaluador de Proyectos - EEBE", layout="wide")
-st.title("🎓 Evaluador de Proyectos de Diseño (EEBE - UPC)")
+st.title("Evaluador de Proyectos de Diseño (EEBE - UPC)")
 st.markdown("Herramienta de autoevaluación para PDS, AMFE, Ishikawa y QFD.")
 
 # ==========================================
