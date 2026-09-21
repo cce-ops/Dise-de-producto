@@ -7,7 +7,7 @@ import google.generativeai as genai
 # CONFIGURACIÓN DE LA PÁGINA
 # ==========================================
 st.set_page_config(page_title="Evaluador de Proyectos - EEBE", layout="wide")
-st.title("🎓 Evaluador de Proyectos de Diseño (EEBE - UPC)")
+st.title("Evaluador de Proyectos de Diseño (EEBE - UPC)")
 st.markdown("Herramienta de autoevaluación para PDS, AMFE, Ishikawa y QFD.")
 
 # ==========================================
@@ -33,7 +33,6 @@ seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo Gemini:", list(mod
 model_name = modelos_disponibles[seleccion_modelo]
 
 def evaluar_texto_llm(prompt_sistema, texto_usuario):
-    """Función para llamar a la API de Google Gemini con el modelo seleccionado."""
     if not api_key:
         return "⚠️ Por favor, introduce tu API Key de Gemini en la barra lateral para usar esta función."
     
@@ -49,7 +48,7 @@ def evaluar_texto_llm(prompt_sistema, texto_usuario):
         )
         return response.text
     except Exception as e:
-        return f"⚠️ Error al conectar con Gemini. Verifica la API Key y asegúrate de que el modelo seleccionado ({model_name}) esté disponible. Detalle: {e}"
+        return f"⚠️ Error al conectar con Gemini. Verifica la API Key y el modelo. Detalle: {e}"
 
 # ==========================================
 # PESTAÑAS DE LA APLICACIÓN
@@ -65,7 +64,6 @@ with tab_pds:
     with st.expander("ℹ️ ¿Cómo funciona esta evaluación? (Caja Blanca)"):
         st.write("""
         **Lo que hace el sistema:**
-        En lugar de ser un cálculo matemático, aquí usamos Inteligencia Artificial (Procesamiento de Lenguaje Natural). 
         El modelo de IA analiza semánticamente tu frase buscando dos cosas críticas:
         1. **Ausencia de ambigüedad:** Penaliza adjetivos subjetivos como "fácil", "resistente", "bonito".
         2. **Presencia de métricas:** Busca activamente números, unidades de medida (kg, mm, W), normativas (ISO, UNE) o condiciones de verificación claras.
@@ -92,9 +90,9 @@ with tab_amfe:
         st.write("""
         **Lo que hace el sistema matemáticamente:**
         1. Extrae los valores que has puesto en $S$, $O$ y $D$.
-        2. Aplica la fórmula del Número de Prioridad de Riesgo: **$NPR = Severidad \times Ocurrencia \times Detección$**.
+        2. Aplica la fórmula: **$NPR = Severidad \times Ocurrencia \times Detección$**.
         3. Evalúa la criticidad mediante lógica condicional:
-           - Si la **Severidad es $\ge 9$** (riesgo de seguridad) o el **$NPR \ge 100$**, marca **🔴 Acción Urgente**.
+           - Si la **Severidad es $\ge 9$** o el **$NPR \ge 100$**, marca **🔴 Acción Urgente**.
            - Si el **$NPR < 50$**, lo considera **🟢 Riesgo Aceptable**.
            - El resto cae en **🟡 Revisión Normal** o **🟠 Prioridad Media-Alta**.
         """)
@@ -176,17 +174,17 @@ with tab_qfd:
         st.write("""
         **Lo que hace el algoritmo matemáticamente:**
         Aplica un modelo de **Suma Producto**. 
-        Por cada columna de requisitos (CÓMO), el sistema toma el valor de relación que has introducido (0, 1, 3 o 9) y lo multiplica por la "Importancia (1-10)" del QUÉ correspondiente de esa fila.
-        Luego, suma todos esos resultados parciales de la columna para darte la **Importancia Técnica Absoluta**. Esto te permite priorizar qué requisitos de ingeniería importan más para satisfacer al usuario.
+        Por cada columna de requisitos (CÓMO), el sistema toma el valor de relación que has introducido (0, 1, 3 o 9) y lo multiplica por la "Importancia" del QUÉ correspondiente de esa fila.
+        Luego, suma todos esos resultados parciales de la columna para darte la **Importancia Técnica Absoluta**. 
+        No importa si evalúas la importancia inicial del 1 al 5, del 1 al 10 o usas valores absolutos mayores; el cálculo priorizará correctamente las columnas más relevantes.
         """)
 
     st.write("Construye tu matriz gestionando tus propias columnas (CÓMOs) y filas (QUÉs).")
     
-    # Inicialización del DataFrame del QFD si no existe
     if "df_qfd" not in st.session_state:
         st.session_state.df_qfd = pd.DataFrame({
             "Necesidades (QUÉ)": ["Fácil de limpiar", "Ligero"],
-            "Importancia (1-10)": [5, 8],
+            "Importancia": [5.0, 8.0],
             "CÓMO: Requisito 1": [9, 0],
             "CÓMO: Requisito 2": [0, 9]
         })
@@ -195,7 +193,6 @@ with tab_qfd:
     st.markdown("### 🛠️ 1. Gestión de Requisitos Técnicos (Columnas CÓMO)")
     
     comos_actuales = [col for col in st.session_state.df_qfd.columns if col.startswith("CÓMO:")]
-    
     col_add, col_ren, col_del = st.columns(3)
     
     with col_add:
@@ -239,9 +236,9 @@ with tab_qfd:
     
     config_qfd = {
         "Necesidades (QUÉ)": st.column_config.TextColumn("Necesidades (QUÉ)", help="Escribe la necesidad en el lenguaje del usuario (Ej: 'Que sea seguro')"),
-        "Importancia (1-10)": st.column_config.NumberColumn(
-            "Importancia (1-10)", min_value=1, max_value=10, 
-            help="Del 1 al 10, ¿cuánto le importa esta necesidad al cliente?"
+        "Importancia": st.column_config.NumberColumn(
+            "Importancia", min_value=0.0, max_value=1000.0, 
+            help="Valora cuánto le importa esto al cliente. Puedes usar una escala básica (1-5 o 1-10) o valores avanzados de Importancia Absoluta. El cálculo de los CÓMOs se ajustará automáticamente a tu escala."
         )
     }
     
@@ -260,7 +257,7 @@ with tab_qfd:
         try:
             st.session_state.df_qfd = df_qfd_edit
             
-            importancias = df_qfd_edit["Importancia (1-10)"].fillna(0).astype(float)
+            importancias = df_qfd_edit["Importancia"].fillna(0).astype(float)
             comos_cols = [col for col in df_qfd_edit.columns if col.startswith("CÓMO:")]
             
             resultados = {}
