@@ -61,8 +61,19 @@ tab_pds, tab_amfe, tab_ishikawa, tab_qfd = st.tabs(["📋 PDS", "⚠️ AMFE", "
 # ------------------------------------------
 with tab_pds:
     st.header("Especificaciones de Diseño de Producto (PDS)")
+    
+    with st.expander("ℹ️ ¿Cómo funciona esta evaluación? (Caja Blanca)"):
+        st.write("""
+        **Lo que hace el sistema:**
+        En lugar de ser un cálculo matemático, aquí usamos Inteligencia Artificial (Procesamiento de Lenguaje Natural). 
+        El modelo de IA analiza semánticamente tu frase buscando dos cosas críticas:
+        1. **Ausencia de ambigüedad:** Penaliza adjetivos subjetivos como "fácil", "resistente", "bonito".
+        2. **Presencia de métricas:** Busca activamente números, unidades de medida (kg, mm, W), normativas (ISO, UNE) o condiciones de verificación claras.
+        """)
+
     st.write("Introduce una especificación para comprobar si es medible y verificable.")
     pds_input = st.text_area("Requisito PDS:", placeholder="Ej: La estructura soportará una carga vertical de al menos 2,0 kN...")
+    
     if st.button("Evaluar PDS"):
         if pds_input:
             prompt_pds = "Eres un profesor de ingeniería. Evalúa si el requisito PDS es medible, cuantificable y verificable. Si es vago, indícalo. Si es correcto, felicítalo."
@@ -76,6 +87,18 @@ with tab_pds:
 # ------------------------------------------
 with tab_amfe:
     st.header("Análisis Modal de Fallos y Efectos (AMFE)")
+    
+    with st.expander("ℹ️ ¿Cómo funciona este cálculo? (Caja Blanca)"):
+        st.write("""
+        **Lo que hace el sistema matemáticamente:**
+        1. Extrae los valores que has puesto en $S$, $O$ y $D$.
+        2. Aplica la fórmula del Número de Prioridad de Riesgo: **$NPR = Severidad \times Ocurrencia \times Detección$**.
+        3. Evalúa la criticidad mediante lógica condicional:
+           - Si la **Severidad es $\ge 9$** (riesgo de seguridad) o el **$NPR \ge 100$**, marca **🔴 Acción Urgente**.
+           - Si el **$NPR < 50$**, lo considera **🟢 Riesgo Aceptable**.
+           - El resto cae en **🟡 Revisión Normal** o **🟠 Prioridad Media-Alta**.
+        """)
+
     st.write("Añade filas según necesites. Pasa el ratón sobre el símbolo **(?)** en las columnas para ver las instrucciones de puntuación.")
     
     if "df_amfe" not in st.session_state:
@@ -87,7 +110,6 @@ with tab_amfe:
             "Detección (D)": [6, 6]
         })
     
-    # Configuración de tooltips (?) y límites de valores para AMFE
     config_amfe = {
         "Severidad (S)": st.column_config.NumberColumn(
             "Severidad (S)", min_value=1, max_value=10, 
@@ -122,13 +144,14 @@ with tab_amfe:
 # 3. EVALUADOR DE ISHIKAWA
 # ------------------------------------------
 with tab_ishikawa:
-    st.header("Diagrama Causa-Efecto (Ishikawa / Espinograma)")
+    st.header("Diagrama Causa-Efecto (Ishikawa)")
     
-    # Mostrar el diagrama visual de Ishikawa (URL pública de Wikimedia Commons)
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Ishikawa_Fishbone_Diagram.svg/1024px-Ishikawa_Fishbone_Diagram.svg.png", 
-             caption="Estructura clásica de las 6M en el Diagrama de Ishikawa", 
-             use_container_width=True)
-    
+    with st.expander("ℹ️ ¿Cómo funciona esta evaluación? (Caja Blanca)"):
+        st.write("""
+        **Lo que hace el sistema:**
+        La IA actúa como un filtro de calidad de redacción técnica. Al leer tu causa, escanea si has usado adjetivos que emiten un "juicio de valor" (ej. ineficiente, desastroso, malo). Si los encuentra, te obligará a reformular la causa hacia un **hecho físico, medible u observable** (ej. "el operario no tiene el manual", "el par de apriete no se verifica").
+        """)
+
     st.write("Verifica que las causas identificadas están redactadas como **hechos verificables** (ej: 'tinta con baja viscosidad') y no como **juicios de valor** (ej: 'tinta mala').")
     
     col1, col2 = st.columns([1, 3])
@@ -148,39 +171,72 @@ with tab_ishikawa:
 # ------------------------------------------
 with tab_qfd:
     st.header("🏠 Casa de la Calidad (QFD)")
-    st.write("Construye tu matriz añadiendo tantos QUÉs (filas) y CÓMOs (columnas) como necesites.")
+    
+    with st.expander("ℹ️ ¿Cómo funciona este cálculo? (Caja Blanca)"):
+        st.write("""
+        **Lo que hace el algoritmo matemáticamente:**
+        Aplica un modelo de **Suma Producto**. 
+        Por cada columna de requisitos (CÓMO), el sistema toma el valor de relación que has introducido (0, 1, 3 o 9) y lo multiplica por la "Importancia (1-10)" del QUÉ correspondiente de esa fila.
+        Luego, suma todos esos resultados parciales de la columna para darte la **Importancia Técnica Absoluta**. Esto te permite priorizar qué requisitos de ingeniería importan más para satisfacer al usuario.
+        """)
+
+    st.write("Construye tu matriz gestionando tus propias columnas (CÓMOs) y filas (QUÉs).")
     
     # Inicialización del DataFrame del QFD si no existe
     if "df_qfd" not in st.session_state:
         st.session_state.df_qfd = pd.DataFrame({
             "Necesidades (QUÉ)": ["Fácil de limpiar", "Ligero"],
             "Importancia (1-10)": [5, 8],
-            "CÓMO: Rugosidad (µm)": [9, 0],
-            "CÓMO: Peso total (kg)": [0, 9]
+            "CÓMO: Requisito 1": [9, 0],
+            "CÓMO: Requisito 2": [0, 9]
         })
 
-    # --- LÓGICA PARA AÑADIR NUEVAS COLUMNAS (CÓMOs) ---
-    st.markdown("### 🏗️ 1. Añadir Nuevos Requisitos Técnicos (Techo de la Casa)")
-    col_input, col_btn = st.columns([3, 1])
-    with col_input:
-        nuevo_como = st.text_input("Nombre de la nueva característica técnica:", placeholder="Ej: Nivel sonoro (dB)")
-    with col_btn:
-        st.write("") # Espaciador para alinear el botón
-        if st.button("➕ Añadir Columna CÓMO"):
+    # --- 1. GESTIÓN DE COLUMNAS (CÓMOs) ---
+    st.markdown("### 🛠️ 1. Gestión de Requisitos Técnicos (Columnas CÓMO)")
+    
+    comos_actuales = [col for col in st.session_state.df_qfd.columns if col.startswith("CÓMO:")]
+    
+    col_add, col_ren, col_del = st.columns(3)
+    
+    with col_add:
+        st.write("**Añadir nuevo CÓMO**")
+        nuevo_como = st.text_input("Nombre de la característica:", placeholder="Ej: Rugosidad (µm)", key="add_como")
+        if st.button("➕ Añadir Columna"):
             if nuevo_como:
                 nombre_columna = f"CÓMO: {nuevo_como}"
                 if nombre_columna not in st.session_state.df_qfd.columns:
-                    # Añadir la columna con valores a 0
                     st.session_state.df_qfd[nombre_columna] = 0
-                    st.rerun() # Recarga la app para mostrar la nueva columna
+                    st.rerun()
                 else:
                     st.warning("Esa característica ya existe.")
+                    
+    with col_ren:
+        st.write("**Renombrar un CÓMO**")
+        if comos_actuales:
+            como_a_renombrar = st.selectbox("Columna a modificar:", comos_actuales)
+            nuevo_nombre = st.text_input("Nuevo nombre:", placeholder="Ej: Nivel sonoro (dB)", key="ren_como")
+            if st.button("✏️ Renombrar Columna"):
+                if nuevo_nombre:
+                    nuevo_nombre_col = f"CÓMO: {nuevo_nombre}"
+                    st.session_state.df_qfd.rename(columns={como_a_renombrar: nuevo_nombre_col}, inplace=True)
+                    st.rerun()
+
+    with col_del:
+        st.write("**Eliminar un CÓMO**")
+        if comos_actuales:
+            como_a_eliminar = st.selectbox("Columna a borrar:", comos_actuales)
+            if st.button("🗑️ Eliminar Columna"):
+                if len(comos_actuales) > 1:
+                    st.session_state.df_qfd.drop(columns=[como_a_eliminar], inplace=True)
+                    st.rerun()
+                else:
+                    st.error("⚠️ Debe quedar al menos una columna CÓMO en la matriz.")
     
-    # --- MATRIZ INTERACTIVA (CUERPO DE LA CASA) ---
+    # --- 2. MATRIZ INTERACTIVA (CUERPO DE LA CASA) ---
+    st.markdown("---")
     st.markdown("### 🟦 2. Cuerpo de la Matriz (Relaciones QUÉ - CÓMO)")
     st.write("Puedes **añadir nuevas filas (QUÉs)** haciendo clic en el símbolo `+` en la parte inferior de la tabla. Pasa el ratón sobre los símbolos **(?)** para ver la puntuación.")
     
-    # Configurar tooltips para el QFD
     config_qfd = {
         "Necesidades (QUÉ)": st.column_config.TextColumn("Necesidades (QUÉ)", help="Escribe la necesidad en el lenguaje del usuario (Ej: 'Que sea seguro')"),
         "Importancia (1-10)": st.column_config.NumberColumn(
@@ -189,49 +245,43 @@ with tab_qfd:
         )
     }
     
-    # Aplicar tooltip a todas las columnas que empiezan por "CÓMO" dinámicamente
     for col in st.session_state.df_qfd.columns:
-        if col.startswith("CÓMO"):
+        if col.startswith("CÓMO:"):
             config_qfd[col] = st.column_config.NumberColumn(
                 col, min_value=0, max_value=9, 
                 help="Relación entre necesidad y requisito técnico. Valores permitidos: \n9 = Fuerte \n3 = Media \n1 = Débil \n0 = Ninguna."
             )
     
-    # Mostramos el editor (num_rows="dynamic" permite añadir filas infinitas)
     df_qfd_edit = st.data_editor(st.session_state.df_qfd, num_rows="dynamic", column_config=config_qfd, use_container_width=True)
     
-    # --- RESULTADOS (BASE DE LA CASA) ---
+    # --- 3. RESULTADOS (BASE DE LA CASA) ---
     st.markdown("### 📊 3. Resultados Técnicos (Base de la Casa)")
     if st.button("Verificar Cálculos QFD y Generar Top-5"):
         try:
-            # Guardamos los cambios realizados por el usuario en el estado para no perderlos
             st.session_state.df_qfd = df_qfd_edit
             
             importancias = df_qfd_edit["Importancia (1-10)"].fillna(0).astype(float)
-            comos_cols = [col for col in df_qfd_edit.columns if col.startswith("CÓMO")]
+            comos_cols = [col for col in df_qfd_edit.columns if col.startswith("CÓMO:")]
             
             resultados = {}
             alertas = False
             for col in comos_cols:
                 valores_relacion = df_qfd_edit[col].fillna(0).astype(float)
-                # Validar que los alumnos usaron la escala correcta
                 if not all(valores_relacion.isin([0, 1, 3, 9])):
                     alertas = True
                     st.warning(f"⚠️ Atención: En la columna '{col}' se detectaron valores distintos a 0, 1, 3 o 9. La metodología exige usar esta escala específica.")
                 
-                # Cálculo de la suma producto
                 importancia_tecnica = (importancias * valores_relacion).sum()
                 resultados[col] = importancia_tecnica
             
-            # Formatear y mostrar resultados
             df_resultados = pd.DataFrame([resultados], index=["Importancia Técnica Absoluta"]).T
             df_resultados = df_resultados.sort_values(by="Importancia Técnica Absoluta", ascending=False)
             
             if not alertas:
                 st.success("✅ Multiplicaciones verificadas con éxito. Escala 9-3-1-0 respetada.")
             
-            st.write("**Ranking Técnico (Top-5 características más importantes):**")
-            st.dataframe(df_resultados.head(5).T, use_container_width=True)
+            st.write("**Ranking Técnico (Características más importantes para el usuario):**")
+            st.dataframe(df_resultados.T, use_container_width=True)
             
         except Exception as e:
             st.error(f"Error en el cálculo. Revisa que no hayas introducido texto en columnas numéricas. Detalle: {e}")
