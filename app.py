@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from openai import OpenAI
+import google.generativeai as genai
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -11,33 +11,37 @@ st.title("🎓 Evaluador de Proyectos de Diseño (EEBE - UPC)")
 st.markdown("Herramienta de autoevaluación para PDS, AMFE, Ishikawa y QFD.")
 
 # ==========================================
-# BARRA LATERAL: CONFIGURACIÓN DEL LLM
+# BARRA LATERAL: CONFIGURACIÓN DE GEMINI
 # ==========================================
-st.sidebar.header("⚙️ Configuración del Modelo de IA")
-st.sidebar.markdown("Conecta tu modelo local (Ollama/LM Studio) o usa una API pública.")
+st.sidebar.header("⚙️ Configuración de IA")
+st.sidebar.markdown("Consigue tu API Key gratuita en [Google AI Studio](https://aistudio.google.com/).")
 
-api_base = st.sidebar.text_input("URL de la API", value="http://localhost:1234/v1", help="Usa http://localhost:11434/v1 para Ollama o el puerto de tu túnel Ngrok.")
-api_key = st.sidebar.text_input("API Key", value="lm-studio", type="password")
-model_name = st.sidebar.text_input("Nombre del Modelo", value="gemma-2-2b-it")
-
-# Inicializar cliente OpenAI (compatible con LM Studio y Ollama)
-client = OpenAI(base_url=api_base, api_key=api_key)
+api_key = st.sidebar.text_input("Gemini API Key", type="password")
+model_name = st.sidebar.selectbox("Modelo", ["gemini-1.5-flash", "gemini-1.5-pro"], index=0, help="Flash es más rápido, Pro es más analítico.")
 
 def evaluar_texto_llm(prompt_sistema, texto_usuario):
-    """Función genérica para llamar al LLM local o remoto."""
+    """Función para llamar a la API de Google Gemini."""
+    if not api_key:
+        return "⚠️ Por favor, introduce tu API Key de Gemini en la barra lateral para usar esta función."
+    
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": texto_usuario}
-            ],
-            temperature=0.3,
-            max_tokens=250
+        # Configurar la clave de autenticación
+        genai.configure(api_key=api_key)
+        
+        # Inicializar el modelo con las instrucciones de sistema
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            system_instruction=prompt_sistema
         )
-        return response.choices[0].message.content
+        
+        # Generar la respuesta con baja temperatura para respuestas objetivas
+        response = model.generate_content(
+            texto_usuario,
+            generation_config=genai.types.GenerationConfig(temperature=0.3)
+        )
+        return response.text
     except Exception as e:
-        return f"⚠️ Error de conexión con el modelo local. Verifica que LM Studio/Ollama esté encendido y la URL sea correcta. Detalle: {e}"
+        return f"⚠️ Error al conectar con Gemini. Verifica la API Key. Detalle: {e}"
 
 # ==========================================
 # PESTAÑAS DE LA APLICACIÓN
@@ -55,11 +59,11 @@ with tab_pds:
     
     if st.button("Evaluar PDS"):
         if pds_input:
-            prompt_pds = """Eres un profesor de ingeniería. Evalúa si el siguiente requisito PDS es medible, cuantificable y verificable. 
+            prompt_pds = """Eres un profesor de ingeniería de diseño. Evalúa si el siguiente requisito PDS es medible, cuantificable y verificable. 
             Si es vago (ej. 'fácil de usar', 'resistente', 'barato'), indícale al alumno que está mal y explícale que debe usar valores numéricos, métricas o normativas. 
-            Si es correcto, felicítalo brevemente."""
+            Si es correcto, felicítalo brevemente y confirma por qué lo es."""
             
-            with st.spinner("Analizando con IA..."):
+            with st.spinner("Analizando con Gemini..."):
                 resultado = evaluar_texto_llm(prompt_pds, pds_input)
             st.info(resultado)
         else:
@@ -82,14 +86,11 @@ with tab_amfe:
             "Detección (D)": [6, 6]
         })
     
-    # Editor de datos interactivo
     df_amfe_edit = st.data_editor(st.session_state.df_amfe, num_rows="dynamic")
     
     if st.button("Calcular Riesgos AMFE"):
-        # Cálculos matemáticos puros
         df_amfe_edit["NPR Calculado"] = df_amfe_edit["Severidad (S)"] * df_amfe_edit["Ocurrencia (O)"] * df_amfe_edit["Detección (D)"]
         
-        # Lógica básica de criticidad
         condiciones = [
             (df_amfe_edit["Severidad (S)"] >= 9),
             (df_amfe_edit["NPR Calculado"] >= 100),
@@ -131,7 +132,6 @@ with tab_qfd:
     st.header("Casa de la Calidad (QFD)")
     st.write("El sistema comprobará que has realizado bien las multiplicaciones de los pesos (QUÉ vs CÓMO). Usa 9 (Fuerte), 3 (Media), 1 (Débil) o 0.")
     
-    # Estructura básica QFD
     if "df_qfd" not in st.session_state:
         st.session_state.df_qfd = pd.DataFrame({
             "Necesidad (QUÉ)": ["Fácil de limpiar", "Ligero"],
@@ -150,17 +150,15 @@ with tab_qfd:
             resultados = {}
             for col in comos_cols:
                 valores_relacion = df_qfd_edit[col].astype(float)
-                # Verifica si metieron números raros
                 if not all(valores_relacion.isin([0, 1, 3, 9])):
                     st.warning(f"⚠️ Atención: En '{col}' hay valores distintos a 0, 1, 3 o 9.")
                 
-                # Suma producto
                 importancia_tecnica = (importancias * valores_relacion).sum()
                 resultados[col] = importancia_tecnica
             
             st.write("### 📊 Importancia Técnica Calculada por el Sistema:")
             df_resultados = pd.DataFrame([resultados], index=["Importancia Técnica"])
             st.dataframe(df_resultados)
-            st.success("Si tus resultados manuales no coinciden con estos, debes revisar tus multiplicaciones.")
+            st.success("Si los cálculos manuales de tu equipo no coinciden con estos, revisad las sumas ponderadas de la matriz.")
         except Exception as e:
             st.error(f"Error en el cálculo. Asegúrate de que las columnas de números no tengan letras. Detalle: {e}")
