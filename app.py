@@ -101,8 +101,9 @@ elif proveedor == "Groq (Gratis)":
       help="Obtén tu clave gratis en console.groq.com",
   )
   modelos_disponibles = {
-      "Llama 3.3 70B Versatile (Groq)": "llama-3.3-70b-versatile",
-      "Gemma 2 9B IT (Groq)": "gemma2-9b-it",
+      "GPT OSS 120B (Groq)": "openai/gpt-oss-120b",
+      "GPT OSS 20B (Groq)": "openai/gpt-oss-20b",
+      "Llama 3.1 8B Instant (Groq)": "llama-3.1-8b-instant",
   }
   seleccion_modelo = st.sidebar.selectbox(
       "Selecciona el modelo Groq:", list(modelos_disponibles.keys()), index=0
