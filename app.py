@@ -41,9 +41,9 @@ if proveedor == "Google Gemini":
 elif proveedor == "NVIDIA NIM (Nemotron)":
     api_key = st.sidebar.text_input("NVIDIA API Key", type="password", help="Obtén tu clave gratis en build.nvidia.com")
     modelos_disponibles = {
+        "Nemotron 3 Ultra (NVIDIA 550B)": "nvidia/nemotron-3-ultra-550b-a55b",
         "Llama 3.1 Nemotron 70B (NVIDIA)": "nvidia/llama-3.1-nemotron-70b-instruct",
-        "Nemotron 4 340B (NVIDIA)": "nvidia/nemotron-4-340b-instruct",
-        "Llama 3.3 70B Instruct (NVIDIA)": "meta/llama-3.3-70b-instruct"
+        "Nemotron 4 340B (NVIDIA)": "nvidia/nemotron-4-340b-instruct"
     }
     seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo NVIDIA:", list(modelos_disponibles.keys()), index=0)
     model_name = modelos_disponibles[seleccion_modelo]
@@ -52,11 +52,14 @@ elif proveedor == "NVIDIA NIM (Nemotron)":
 elif proveedor == "OpenRouter (Modelos Gratis)":
     api_key = st.sidebar.text_input("OpenRouter API Key", type="password", help="Obtén tu clave gratis en openrouter.ai")
     modelos_disponibles = {
-        "Nemotron 3 8B (OpenRouter Gratis)": "nvidia/nemotron-3-8b-instruct:free",
+        "Nemotron 3 Ultra (OpenRouter Gratis)": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "Llama 3.3 70B (OpenRouter Gratis)": "meta-llama/llama-3.3-70b-instruct:free",
         "Gemma 2 9B (OpenRouter Gratis)": "google/gemma-2-9b-it:free",
-        "Qwen 2.5 72B (OpenRouter Gratis)": "qwen/qwen-2.5-72b-instruct:free",
-        "Mistral 7B (OpenRouter Gratis)": "mistralai/mistral-7b-instruct:free"
+        "Qwen 2.5 72B (OpenRouter Gratis)": "qwen/qwen-2.5-72b-instruct:free"
+    }
+    seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo OpenRouter:", list(modelos_disponibles.keys()), index=0)
+    model_name = modelos_disponibles[seleccion_modelo]
+    base_url = "https://openrouter.ai/api/v1"
     }
     seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo OpenRouter:", list(modelos_disponibles.keys()), index=0)
     model_name = modelos_disponibles[seleccion_modelo]
