@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import google.generativeai as genai
+from openai import OpenAI
 
 # ==========================================
 # CONFIGURACIÓN DE LA PÁGINA
@@ -11,44 +12,96 @@ st.title("Evaluador de Proyectos de Diseño (EEBE - UPC)")
 st.markdown("Herramienta de autoevaluación para PDS, AMFE, Ishikawa y QFD.")
 
 # ==========================================
-# BARRA LATERAL: CONFIGURACIÓN DE GEMINI
+# BARRA LATERAL: CONFIGURACIÓN DE IA
 # ==========================================
 st.sidebar.header("⚙️ Configuración de IA")
-st.sidebar.markdown("Introduce tu API Key para utilizar los modelos de evaluación.")
+st.sidebar.markdown("Selecciona el proveedor de IA e introduce tu API Key.")
 
-api_key = st.sidebar.text_input("Gemini API Key", type="password")
+proveedor = st.sidebar.selectbox(
+    "Proveedor de IA:",
+    ["Google Gemini", "NVIDIA NIM (Nemotron)", "OpenRouter (Modelos Gratis)", "Groq (Gratis)"]
+)
 
-modelos_disponibles = {
-    "Gemini 3.8 Flash (Más inteligente, flujos complejos)": "gemini-3.8-flash",
-    "Gemini 3.8 Live (Voz, baja latencia)": "gemini-3.8-live",
-    "Gemini 3.8 Live Extended Thinking (Alto razonamiento)": "gemini-3.8-live-extended-thinking",
-    "Gemini 3.7 Flash (Programación y varios pasos)": "gemini-3.7-flash",
-    "Gemini 3.6 Flash (Equilibrio tareas cotidianas)": "gemini-3.6-flash",
-    "Gemini 3.5 Flash (Velocidad para cargas rutinarias)": "gemini-3.5-flash",
-    "Gemini 3.5 Flash-Lite (Más rápido y rentable)": "gemini-3.5-flash-lite",
-    "Gemini 3.1 Flash-Lite (Rendimiento Frontier)": "gemini-3.1-flash-lite"
-}
+if proveedor == "Google Gemini":
+    api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Obtén tu clave en Google AI Studio")
+    modelos_disponibles = {
+        "Gemini 3.8 Flash (Más inteligente, flujos complejos)": "gemini-3.8-flash",
+        "Gemini 3.8 Live (Voz, baja latencia)": "gemini-3.8-live",
+        "Gemini 3.8 Live Extended Thinking (Alto razonamiento)": "gemini-3.8-live-extended-thinking",
+        "Gemini 3.7 Flash (Programación y varios pasos)": "gemini-3.7-flash",
+        "Gemini 3.6 Flash (Equilibrio tareas cotidianas)": "gemini-3.6-flash",
+        "Gemini 3.5 Flash (Velocidad para cargas rutinarias)": "gemini-3.5-flash",
+        "Gemini 3.5 Flash-Lite (Más rápido y rentable)": "gemini-3.5-flash-lite",
+        "Gemini 3.1 Flash-Lite (Rendimiento Frontier)": "gemini-3.1-flash-lite"
+    }
+    seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo Gemini:", list(modelos_disponibles.keys()), index=0)
+    model_name = modelos_disponibles[seleccion_modelo]
+    base_url = None
 
-seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo Gemini:", list(modelos_disponibles.keys()), index=0)
-model_name = modelos_disponibles[seleccion_modelo]
+elif proveedor == "NVIDIA NIM (Nemotron)":
+    api_key = st.sidebar.text_input("NVIDIA API Key", type="password", help="Obtén tu clave gratis en build.nvidia.com")
+    modelos_disponibles = {
+        "Llama 3.1 Nemotron 70B (NVIDIA)": "nvidia/llama-3.1-nemotron-70b-instruct",
+        "Nemotron 4 340B (NVIDIA)": "nvidia/nemotron-4-340b-instruct",
+        "Llama 3.3 70B Instruct (NVIDIA)": "meta/llama-3.3-70b-instruct"
+    }
+    seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo NVIDIA:", list(modelos_disponibles.keys()), index=0)
+    model_name = modelos_disponibles[seleccion_modelo]
+    base_url = "https://integrate.api.nvidia.com/v1"
+
+elif proveedor == "OpenRouter (Modelos Gratis)":
+    api_key = st.sidebar.text_input("OpenRouter API Key", type="password", help="Obtén tu clave gratis en openrouter.ai")
+    modelos_disponibles = {
+        "Nemotron 3 8B (OpenRouter Gratis)": "nvidia/nemotron-3-8b-instruct:free",
+        "Llama 3.3 70B (OpenRouter Gratis)": "meta-llama/llama-3.3-70b-instruct:free",
+        "Gemma 2 9B (OpenRouter Gratis)": "google/gemma-2-9b-it:free",
+        "Qwen 2.5 72B (OpenRouter Gratis)": "qwen/qwen-2.5-72b-instruct:free",
+        "Mistral 7B (OpenRouter Gratis)": "mistralai/mistral-7b-instruct:free"
+    }
+    seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo OpenRouter:", list(modelos_disponibles.keys()), index=0)
+    model_name = modelos_disponibles[seleccion_modelo]
+    base_url = "https://openrouter.ai/api/v1"
+
+elif proveedor == "Groq (Gratis)":
+    api_key = st.sidebar.text_input("Groq API Key", type="password", help="Obtén tu clave gratis en console.groq.com")
+    modelos_disponibles = {
+        "Llama 3.3 70B Versatile (Groq)": "llama-3.3-70b-versatile",
+        "Gemma 2 9B IT (Groq)": "gemma2-9b-it"
+    }
+    seleccion_modelo = st.sidebar.selectbox("Selecciona el modelo Groq:", list(modelos_disponibles.keys()), index=0)
+    model_name = modelos_disponibles[seleccion_modelo]
+    base_url = "https://api.groq.com/openai/v1"
+
 
 def evaluar_texto_llm(prompt_sistema, texto_usuario):
     if not api_key:
-        return "⚠️ Por favor, introduce tu API Key de Gemini en la barra lateral para usar esta función."
+        return f"⚠️ Por favor, introduce tu API Key para {proveedor} en la barra lateral para usar esta función."
     
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            system_instruction=prompt_sistema
-        )
-        response = model.generate_content(
-            texto_usuario,
-            generation_config=genai.types.GenerationConfig(temperature=0.3)
-        )
-        return response.text
+        if proveedor == "Google Gemini":
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                system_instruction=prompt_sistema
+            )
+            response = model.generate_content(
+                texto_usuario,
+                generation_config=genai.types.GenerationConfig(temperature=0.3)
+            )
+            return response.text
+        else:
+            client = OpenAI(base_url=base_url, api_key=api_key)
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": prompt_sistema},
+                    {"role": "user", "content": texto_usuario}
+                ],
+                temperature=0.3
+            )
+            return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error al conectar con Gemini. Verifica la API Key y el modelo. Detalle: {e}"
+        return f"⚠️ Error al conectar con {proveedor}. Verifica la API Key y el modelo. Detalle: {e}"
 
 # ==========================================
 # PESTAÑAS DE LA APLICACIÓN
