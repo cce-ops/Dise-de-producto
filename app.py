@@ -61,7 +61,6 @@ elif proveedor == "NVIDIA NIM (Nemotron)":
     )
     modelos_disponibles = {
         "Nemotron 3 Ultra (NVIDIA 550B)": "nvidia/nemotron-3-ultra-550b-a55b",
-        "Llama 3.1 Nemotron 70B (NVIDIA)": "nvidia/llama-3.1-nemotron-70b-instruct",
         "Nemotron 4 340B (NVIDIA)": "nvidia/nemotron-4-340b-instruct",
     }
     seleccion_modelo = st.sidebar.selectbox(
@@ -79,9 +78,6 @@ elif proveedor == "OpenRouter (Modelos Gratis)":
     modelos_disponibles = {
         "Nemotron 3 Ultra (OpenRouter Gratis)": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "Space Bunny Alpha (OpenRouter)": "stealth/space-bunny-alpha",
-        "Qwen 3.8 27B (OpenRouter Gratis)": "qwen/qwen3.8-27b:free",
-        "Gemma 4 26B (OpenRouter Gratis)": "google/gemma-4-26b-a4b-it:free",
-        "Gemma 4 31B (OpenRouter Gratis)": "google/gemma-4-31b-it:free",
     }
     seleccion_modelo = st.sidebar.selectbox(
         "Selecciona el modelo OpenRouter:",
