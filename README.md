@@ -1,4 +1,3 @@
-[readme_del_repositorio.md](https://github.com/user-attachments/files/32648459/readme_del_repositorio.md)
 # 🛠️ Evaluador de Proyectos de Diseño 
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
@@ -104,6 +103,4 @@ Dise-de-producto/
 
 ---
 
-## 🏫 Entorno Académico
 
-Proyecto desarrollado para la asignatura de **Diseño de Producto** en la **Escola d'Enginyeria de Barcelona Est (EEBE)** de la **Universitat Politècnica de Catalunya (UPC)**.
