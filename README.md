@@ -5,7 +5,7 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-red.svg)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Aplicación interactiva desarrollada en **Streamlit** para la autoevaluación y validación metódica de proyectos de ingeniería en la **Escola d'Enginyeria de Barcelona Est (EEBE - UPC)**. 
+Aplicación interactiva desarrollada en **Streamlit** para la autoevaluación y validación metódica de proyectos de ingeniería. 
 
 La herramienta combina lógica matemática estricta con evaluación por **Inteligencia Artificial Multimodelo** para guiarse en el aprendizaje de metodologías clave de diseño industrial y desarrollo de producto.
 
