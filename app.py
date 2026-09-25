@@ -84,7 +84,7 @@ elif proveedor == "OpenRouter (Modelos Gratis)":
           "meta-llama/llama-3.3-70b-instruct:free"
       ),
       "Gemma 2 9B (OpenRouter Gratis)": "google/gemma-2-9b-it:free",
-      "Qwen 2.5 72B (OpenRouter Gratis)": "qwen/qwen-2.5-72b-instruct:free",
+      "Qwen 3.8 27B (OpenRouter Gratis)": "qwen/qwen3.8-27b:free",
   }
   seleccion_modelo = st.sidebar.selectbox(
       "Selecciona el modelo OpenRouter:",
@@ -103,7 +103,6 @@ elif proveedor == "Groq (Gratis)":
   modelos_disponibles = {
       "GPT OSS 120B (Groq)": "openai/gpt-oss-120b",
       "GPT OSS 20B (Groq)": "openai/gpt-oss-20b",
-      "Llama 3.1 8B Instant (Groq)": "llama-3.1-8b-instant",
   }
   seleccion_modelo = st.sidebar.selectbox(
       "Selecciona el modelo Groq:", list(modelos_disponibles.keys()), index=0
